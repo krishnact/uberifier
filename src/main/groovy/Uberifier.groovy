@@ -200,7 +200,7 @@ distributionUrl=https\\://services.gradle.org/distributions/gradle-3.4.1-all.zip
 		).toString()
 
 		File gradleConfFile = new File(gradleConfig)
-		if ( gradleConfFile.exists() && gradleConfFile.text.contains(GRADLE_CONF_SIGNATURE))
+		if ( gradleConfFile.exists() && !gradleConfFile.text.contains(GRADLE_CONF_SIGNATURE))
 		{
 			warn ("The gradle conf file ${} was not created by this tool. Please save it because we want to overwrite it.")
 			System.exit(-14)
@@ -257,10 +257,13 @@ distributionUrl=https\\://services.gradle.org/distributions/gradle-3.4.1-all.zip
 
 	void copySrcFile(File srcFile, File destFile) {
 		info "Creating uberjar for ${destFile.absolutePath}"
+		
 		if ( destFile != srcFile){
 			clean(srcFolder);
 			destFile.parentFile.mkdirs();
 			destFile.text = srcFile.text
+		}else{
+			info "Not cleaning ${this.srcFolder} because ${destFile.absolutePath} = ${destFile.absolutePath}"
 		}
 	}
 	//D:\clients\cox\tools\groovy-executable-jar-with-gradle-example-master\src\main\groovy\org\himalay\general\tools\MassSNMP.groovy
