@@ -3,7 +3,7 @@
  [
  @GrabResolver(name='jitpack', root='https://jitpack.io'),
  @GrabResolver(name='gradle', root='https://repo.gradle.org/gradle/libs-releases-local'),
- @Grab('com.github.krishnact:commandlinetool-base:0.4.1'),
+ @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.4.1'),
  @Grab('org.slf4j:slf4j-log4j12:1.7.7'),
  @Grab('org.himalay:gradle-wrapper:0.0.1')
  ]
@@ -149,17 +149,26 @@ distributionUrl=https\\://services.gradle.org/distributions/gradle-3.4.1-all.zip
 		def depends=[]
 		def package_=""
 		def mainClass=groovyFile.name.split('\\.')[0]
-		boolean classFileStarted = false
+		boolean classDeclStarted = false
 		groovyFile.eachLine {String aLine->
-			if ( classFileStarted == false){
+			if ( classDeclStarted == false){
 				switch (aLine){
 					case ~$/.*@GrabResolver.*/$:
+						info ("Found GrabResolver ${aLine}")
 						def match =  aLine =~/.*'(.*)'.*/
 						repos << match[0][1]
 						break;
 					case ~$/.*@Grab.*/$:
-						def match =  aLine =~/.*'(.*)'.*/
-						depends << match[0][1]
+						def match =  aLine =~/\((.*)\)/
+						String aDepend = match[0][1] 
+						info ("Found grab ${aLine} ${aDepend}") 
+						if (aDepend ==~ /.*group.*/){
+							aDepend = convertGrabStatement(aDepend)
+							info ("Converted ${match[0][1]} to ${aDepend}")
+						}else{
+							aDepend = aDepend.replaceAll("'","")
+						}
+						depends << aDepend
 						break;
 					case ~$/[\s]*package .*/$:
 						def match =  aLine =~/[\s]*package[\s]+(.*)[\s]*/
@@ -167,7 +176,7 @@ distributionUrl=https\\://services.gradle.org/distributions/gradle-3.4.1-all.zip
 						mainClass= package_ +'.'+mainClass
 						break;
 					case ~$/.*class\s+.*/$:
-						classFileStarted = true
+						classDeclStarted = true
 						break;
 				}
 			}
@@ -230,6 +239,29 @@ distributionUrl=https\\://services.gradle.org/distributions/gradle-3.4.1-all.zip
 		
 	}
 
+	/**
+	 * Converts this format: group='org.apache.commons', module='commons-csv', version='1.4'
+	 * into this format: org.apache.commons:commons-csv:1.4
+
+	 * @param dependArgs
+	 * @return converted string
+	 */
+    private String convertGrabStatement(String dependArgs)
+    {
+   
+        def grabArgs = [group:'', module:'', version:'']
+        dependArgs = dependArgs.replaceAll(/\s+/,"")
+        String args = dependArgs;//dependArgs.find(/\((.*)\)/)
+        if ( args != null){
+            args.replaceAll(/[()]/,"").split(',').each{
+                String[] parts = it.split('=')
+                grabArgs[parts[0]]= parts[1].replaceAll("'","")
+
+            }
+        }
+        return grabArgs.group +":"+ grabArgs.module +  ':' + grabArgs.version
+    }
+	
 	private static File wrapperJar() {
 		URI location;
 		try {
